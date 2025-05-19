@@ -1,0 +1,106 @@
+import datetime
+
+class ParkingSlot:
+    def __init__(self, slot_id):
+        self.slot_id = slot_id
+        self.is_occupied = False
+        self.vehicle_number = None
+        self.entry_time = None
+
+    def book(self, vehicle_number):
+        if not self.is_occupied:
+            self.is_occupied = True
+            self.vehicle_number = vehicle_number
+            self.entry_time = datetime.datetime.now()
+            return True
+        return False
+
+    def release(self):
+        if self.is_occupied:
+            duration = datetime.datetime.now() - self.entry_time
+            self.is_occupied = False
+            bill = round(duration.total_seconds() / 60) * 2  # ₹2 per minute
+            info = {
+                "vehicle_number": self.vehicle_number,
+                "duration": duration,
+                "bill": bill
+            }
+            self.vehicle_number = None
+            self.entry_time = None
+            return info
+        return None
+
+class ParkingLot:
+    def __init__(self, lot_name, total_slots):
+        self.lot_name = lot_name
+        self.slots = [ParkingSlot(f"{lot_name}-S{i+1}") for i in range(total_slots)]
+
+    def show_slots(self):
+        for slot in self.slots:
+            status = "Occupied" if slot.is_occupied else "Available"
+            print(f"{slot.slot_id}: {status} - {slot.vehicle_number if slot.is_occupied else ''}")
+
+    def get_available_slot(self):
+        for slot in self.slots:
+            if not slot.is_occupied:
+                return slot
+        return None
+
+    def book_slot(self, vehicle_number):
+        slot = self.get_available_slot()
+        if slot and slot.book(vehicle_number):
+            print(f"✅ Slot {slot.slot_id} booked for {vehicle_number}")
+        else:
+            print("❌ No slots available.")
+
+    def vacate_slot(self, slot_id):
+        for slot in self.slots:
+            if slot.slot_id == slot_id:
+                info = slot.release()
+                if info:
+                    print(f"✅ Slot {slot_id} vacated for vehicle {info['vehicle_number']}")
+                    print(f"🕒 Duration: {info['duration']}")
+                    print(f"💰 Amount Due: ₹{info['bill']}")
+                else:
+                    print("⚠️ Slot is already free.")
+                return
+        print("❌ Slot not found.")
+
+# City-wide system
+def run_parking_system():
+    city_lots = {
+        "LotA": ParkingLot("LotA", 5),
+        "LotB": ParkingLot("LotB", 3)
+    }
+
+    while True:
+        print("\n--- Smart Parking System ---")
+        print("1. View Slots")
+        print("2. Book a Slot")
+        print("3. Vacate a Slot")
+        print("4. Exit")
+        choice = input("Enter choice: ")
+
+        if choice == "1":
+            for name, lot in city_lots.items():
+                print(f"\n{name} Status:")
+                lot.show_slots()
+        elif choice == "2":
+            lot_name = input("Enter lot name (LotA/LotB): ")
+            vehicle = input("Enter vehicle number: ")
+            if lot_name in city_lots:
+                city_lots[lot_name].book_slot(vehicle)
+            else:
+                print("❌ Invalid lot name.")
+        elif choice == "3":
+            slot_id = input("Enter full slot ID (e.g., LotA-S1): ")
+            for lot in city_lots.values():
+                lot.vacate_slot(slot_id)
+        elif choice == "4":
+            print("Exiting Smart Parking System.")
+            break
+        else:
+            print("❌ Invalid option.")
+
+if __name__ == "__main__":
+    run_parking_system()
